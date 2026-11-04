@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MOVIE HUB — Built by Prashant</title>
+<style>
+:root{color-scheme:dark;--bg:#080b12;--panel:#111827;--muted:#9ca3af;--accent:#e11d48;--line:#273244}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#182033,#080b12 55%);color:#f8fafc;font:15px/1.5 system-ui,Arial}
+header{padding:26px 5vw 18px;border-bottom:1px solid var(--line);display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+h1{margin:0;font-size:clamp(27px,5vw,42px);letter-spacing:2px}.brand small{color:#fb7185;letter-spacing:3px;font-weight:800}
+button,.btn{border:0;border-radius:10px;padding:11px 16px;background:var(--accent);color:white;font-weight:750;cursor:pointer}
+button.secondary{background:#263247}button:disabled{opacity:.5;cursor:wait}
+main{max-width:1200px;margin:26px auto;padding:0 18px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+input,textarea,select{width:100%;padding:12px;border-radius:9px;border:1px solid #354256;background:#0b1220;color:white;font:inherit}
+.toolbar input{flex:1;min-width:200px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:17px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.poster{width:100%;aspect-ratio:2/3;object-fit:cover;background:#1e293b}.cardbody{padding:12px}.card h3{margin:0 0 5px;font-size:16px}.muted{color:var(--muted);font-size:13px}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.actions button{padding:8px 10px;font-size:13px}
+.panel{background:rgba(17,24,39,.94);border:1px solid var(--line);border-radius:16px;padding:18px;margin:18px 0}
+.hidden{display:none!important}.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.field label{display:block;color:#cbd5e1;font-size:13px;margin:0 0 5px}
+.player video{width:100%;max-height:65vh;background:#000;border-radius:12px}.status{padding:10px 12px;border-radius:9px;background:#1e293b;color:#cbd5e1;margin:10px 0;white-space:pre-wrap}
+footer{text-align:center;color:#64748b;padding:35px}
+</style>
+</head>
+<body>
+<header><div class="brand"><h1>MOVIE HUB</h1><small>BUILT BY PRASHANT</small></div><div><button id="loginOpen" class="secondary">Admin Login</button> <button id="logout" class="secondary hidden">Logout</button></div></header>
+<main>
+<div class="toolbar"><input id="search" placeholder="Search movies..."><select id="genre"><option value="">All categories</option><option>Action</option><option>Comedy</option><option>Drama</option><option>Horror</option><option>Romance</option><option>Thriller</option><option>Animation</option><option>Other</option></select></div>
+<section id="loginPanel" class="panel hidden"><h2>Admin Login</h2><div class="formgrid"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password"></div></div><div class="actions"><button id="login">Login</button></div><div class="muted">Admin access is restricted by Firebase security rules and the configured admin UID.</div></section>
+<section id="adminPanel" class="panel hidden"><h2>Add a movie</h2><div class="formgrid">
+<div class="field"><label>Movie title *</label><input id="title" placeholder="Movie title"></div>
+<div class="field"><label>Category</label><select id="category"><option>Action</option><option>Comedy</option><option>Drama</option><option>Horror</option><option>Romance</option><option>Thriller</option><option>Animation</option><option>Other</option></select></div>
+<div class="field"><label>Release year</label><input id="year" type="number" min="1888" max="2100" placeholder="2026"></div>
+<div class="field"><label>Poster image URL</label><input id="poster" type="url" placeholder="https://..."></div>
+<div class="field"><label>480p video URL</label><input id="v480" type="url" placeholder="Direct authorized video URL"></div>
+<div class="field"><label>720p video URL</label><input id="v720" type="url"></div>
+<div class="field"><label>1080p video URL</label><input id="v1080" type="url"></div>
+<div class="field"><label>4K video URL</label><input id="v4k" type="url"></div>
+<div class="field"><label>Upload video file (optional)</label><input id="videoFile" type="file" accept="video/*"></div>
+<div class="field"><label>Description</label><textarea id="description" rows="2"></textarea></div>
+</div><div class="actions"><button id="addMovie">Add movie</button></div><div id="adminStatus" class="status">Upload your own or legally authorized videos only.</div></section>
+<section id="playerPanel" class="panel player hidden"><h2 id="playerTitle">Now playing</h2><select id="quality" style="max-width:220px;margin-bottom:10px"></select><video id="video" controls playsinline></video><p id="playerDesc" class="muted"></p></section>
+<h2>Movie collection</h2><div id="status" class="status">Connect Firebase in this file to load your online movie collection.</div><div id="movies" class="grid"></div>
+</main><footer>MOVIE HUB · BUILT BY PRASHANT</footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script>
+// 1) Paste your Firebase Web App config below.
+// 2) Set ADMIN_UID to the UID of your admin account (Firebase Authentication).
+const firebaseConfig = {
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+  projectId: "PASTE_PROJECT_ID",
+  storageBucket: "PASTE_PROJECT_ID.appspot.com",
+  messagingSenderId: "PASTE_MESSAGING_SENDER_ID",
+  appId: "PASTE_APP_ID"
+};
+const ADMIN_UID = "EnFXzVouXFdMBtTh4YbAktrm0Tu1";
+const configured = !Object.values(firebaseConfig).some(v => String(v).startsWith("PASTE_")) && !ADMIN_UID.startsWith("PASTE_");
+let auth, db, storage, currentUser=null, allMovies=[];
+const $=id=>document.getElementById(id);
+function msg(id,s){$(id).textContent=s}
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+if(configured){firebase.initializeApp(firebaseConfig);auth=firebase.auth();db=firebase.firestore();storage=firebase.storage();
+ auth.onAuthStateChanged(async user=>{currentUser=user;const admin=!!user&&user.uid===ADMIN_UID;$('adminPanel').classList.toggle('hidden',!admin);$('logout').classList.toggle('hidden',!user);$('loginOpen').classList.toggle('hidden',!!user);if(user&&!admin)await auth.signOut();loadMovies();});
+}else{msg('status','Setup required: add Firebase config and ADMIN_UID in index.html, then deploy. See README.txt.');}
+$('loginOpen').onclick=()=>$('loginPanel').classList.toggle('hidden');
+$('login').onclick=async()=>{try{await auth.signInWithEmailAndPassword($('email').value.trim(),$('password').value);$('loginPanel').classList.add('hidden')}catch(e){msg('status','Login failed: '+e.message)}};
+$('logout').onclick=()=>auth.signOut();
+async function loadMovies(){if(!configured)return;try{const snap=await db.collection('movies').orderBy('createdAt','desc').get();allMovies=snap.docs.map(d=>({id:d.id,...d.data()}));render();msg('status',allMovies.length+' movie(s) loaded.')}catch(e){msg('status','Could not load movies: '+e.message)}}
+function render(){const q=$('search').value.toLowerCase(),g=$('genre').value;const list=allMovies.filter(m=>(m.title||'').toLowerCase().includes(q)&&(!g||m.category===g));$('movies').innerHTML=list.map(m=>`<article class="card"><img class="poster" src="${esc(m.poster||'')}" alt="" onerror="this.style.visibility='hidden'"><div class="cardbody"><h3>${esc(m.title)}</h3><div class="muted">${esc(m.category||'Other')} ${m.year?'· '+esc(m.year):''}</div><div class="actions"><button onclick="playMovie('${m.id}')">Play</button><button class="secondary" onclick="downloadMovie('${m.id}')">Download</button>${currentUser&&currentUser.uid===ADMIN_UID?`<button class="secondary" onclick="deleteMovie('${m.id}')">Delete</button>`:''}</div></div></article>`).join('')||'<p class="muted">No movies found.</p>'}
+$('search').oninput=render;$('genre').onchange=render;
+window.playMovie=id=>{const m=allMovies.find(x=>x.id===id);if(!m)return;const opts=['480p','720p','1080p','4K'].filter(k=>m[k]);if(!opts.length){msg('status','No playable video URL for this movie.');return;}$('playerPanel').classList.remove('hidden');$('playerTitle').textContent=m.title;$('playerDesc').textContent=m.description||'';$('quality').innerHTML=opts.map(k=>`<option value="${esc(m[k])}">${k}</option>`).join('');$('video').src=m[opts[0]];$('video').load();$('playerPanel').scrollIntoView({behavior:'smooth'});};
+$('quality').onchange=()=>{$('video').src=$('quality').value;$('video').load();$('video').play().catch(()=>{});};
+window.downloadMovie=id=>{const m=allMovies.find(x=>x.id===id);if(!m)return;const url=m['1080p']||m['720p']||m['480p']||m['4K'];if(!url){msg('status','No download URL available.');return;}const a=document.createElement('a');a.href=url;a.download=(m.title||'movie').replace(/[^\w-]+/g,'_');a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();};
+window.deleteMovie=async id=>{if(!currentUser||currentUser.uid!==ADMIN_UID||!confirm('Delete this movie?'))return;try{await db.collection('movies').doc(id).delete();await loadMovies()}catch(e){alert(e.message)}};
+$('addMovie').onclick=async()=>{if(!currentUser||currentUser.uid!==ADMIN_UID)return;const title=$('title').value.trim();if(!title){msg('adminStatus','Movie title is required.');return;}const btn=$('addMovie');btn.disabled=true;try{const urls={'480p':$('v480').value.trim(),'720p':$('v720').value.trim(),'1080p':$('v1080').value.trim(),'4K':$('v4k').value.trim()};const file=$('videoFile').files[0];if(file){const safe=file.name.replace(/[^\w.-]+/g,'_');const ref=storage.ref('videos/'+currentUser.uid+'/'+Date.now()+'_'+safe);const task=await ref.put(file);urls['1080p']=await task.ref.getDownloadURL();}
+if(!Object.values(urls).some(Boolean))throw new Error('Add at least one direct video URL or upload a video file.');const data={title,category:$('category').value,year:$('year').value||'',poster:$('poster').value.trim(),description:$('description').value.trim(),...urls,createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:currentUser.uid};await db.collection('movies').add(data);['title','year','poster','v480','v720','v1080','v4k','description','videoFile'].forEach(id=>$(id).value='');msg('adminStatus','Movie added successfully!');await loadMovies()}catch(e){msg('adminStatus','Error: '+e.message)}finally{btn.disabled=false}};
+</script>
+</body></html>
