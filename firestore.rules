@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() { return request.auth != null && request.auth.uid == "EnFXzVouXFdMBtTh4YbAktrm0Tu1"; }
+    match /movies/{movieId} {
+      allow read: if true;
+      allow create: if isAdmin() && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+  }
+}
