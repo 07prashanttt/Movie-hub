@@ -1,0 +1,12 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() { return request.auth != null && request.auth.uid == "EnFXzVouXFdMBtTh4YbAktrm0Tu1"; }
+    match /videos/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && userId == request.auth.uid
+                   && request.resource.size < 200 * 1024 * 1024
+                   && request.resource.contentType.matches('video/.*');
+    }
+  }
+}
